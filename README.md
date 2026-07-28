@@ -94,7 +94,13 @@ The model is trained on the **Pima Indians Diabetes Dataset**. It uses the follo
 - Diabetes Prediction
 
 ---
+## 📊 Results
 
+- Achieved up to **76% accuracy** on the Pima Indians Diabetes Dataset
+- Evaluated using accuracy, precision, recall, and F1-score across multiple algorithms
+- Improved performance through feature selection and cross-validation
+
+---
 ## 📈 Future Improvements
 
 - Improve prediction accuracy using advanced algorithms.
@@ -109,7 +115,7 @@ The model is trained on the **Pima Indians Diabetes Dataset**. It uses the follo
 **Nisha Kumari**
 
 - GitHub: https://github.com/Nishagupta2212
-- LinkedIn: *(Add your LinkedIn profile link here)*
+- LinkedIn: - LinkedIn: https://www.linkedin.com/in/nisha-kumari22/
 
 ---
 
