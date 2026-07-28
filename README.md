@@ -79,6 +79,8 @@ The model is trained on the **Pima Indians Diabetes Dataset**. It uses the follo
 - BMI
 - Diabetes Pedigree Function
 - Age
+  <img width="1891" height="965" alt="image" src="https://github.com/user-attachments/assets/b4ddb5be-56ce-4cd3-91b7-a1d58b85506f" />
+
 
 ---
 
