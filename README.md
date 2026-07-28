@@ -79,7 +79,6 @@ The model is trained on the **Pima Indians Diabetes Dataset**. It uses the follo
 - BMI
 - Diabetes Pedigree Function
 - Age
-  <img width="1891" height="965" alt="image" src="https://github.com/user-attachments/assets/b4ddb5be-56ce-4cd3-91b7-a1d58b85506f" />
 
 
 ---
@@ -112,6 +111,16 @@ The model is trained on the **Pima Indians Diabetes Dataset**. It uses the follo
 - Support multiple datasets and enhanced input validation.
 
 ---
+## 📸 App Preview
+
+**Prediction Interface**
+<img width="1901" height="901" alt="Screenshot 2026-07-28 175856" src="https://github.com/user-attachments/assets/f2026af1-521d-4562-9d59-d6b47e3bdaa9" />
+
+**Dataset Preview**
+<img width="1916" height="903" alt="Screenshot 2026-07-28 175912" src="https://github.com/user-attachments/assets/329d94ac-63eb-49ba-b5e5-52bca55228f9" />
+
+**Model Performance**
+<img width="1816" height="742" alt="Screenshot 2026-07-28 175924" src="https://github.com/user-attachments/assets/419e1bad-fd5d-4f86-b82c-99490e6c97ca" />
 
 ## 👩‍💻 Author
 
