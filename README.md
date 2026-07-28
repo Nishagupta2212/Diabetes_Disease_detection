@@ -96,9 +96,12 @@ The model is trained on the **Pima Indians Diabetes Dataset**. It uses the follo
 ---
 ## 📊 Results
 
-- Achieved up to **76% accuracy** on the Pima Indians Diabetes Dataset
-- Evaluated using accuracy, precision, recall, and F1-score across multiple algorithms
-- Improved performance through feature selection and cross-validation
+- **Algorithm:** Support Vector Machine (linear kernel)
+- **Training accuracy:** 78.66%
+- **Test accuracy:** 77.27%
+- **Dataset:** Pima Indians Diabetes Dataset (768 rows × 9 columns)
+- **Features used:** Pregnancies, Glucose, Blood Pressure, Skin Thickness, Insulin, BMI,
+  Diabetes Pedigree Function, Age
 
 ---
 ## 📈 Future Improvements
