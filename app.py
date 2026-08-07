@@ -1,7 +1,6 @@
 """Streamlit UI for the PIMA diabetes prediction model."""
 import pickle
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 
@@ -14,9 +13,11 @@ def load_artifacts():
         model = pickle.load(f)
     with open("scaler.pkl", "rb") as f:
         scaler = pickle.load(f)
+    with open("impute_medians.pkl", "rb") as f:
+        impute_medians = pickle.load(f)
     with open("metrics.pkl", "rb") as f:
         metrics = pickle.load(f)
-    return model, scaler, metrics
+    return model, scaler, impute_medians, metrics
 
 
 @st.cache_data
@@ -24,7 +25,7 @@ def load_dataset():
     return pd.read_csv("diabetes.csv")
 
 
-model, scaler, metrics = load_artifacts()
+model, scaler, impute_medians, metrics = load_artifacts()
 diabetes_dataset = load_dataset()
 
 FEATURES = [
@@ -61,9 +62,14 @@ with tab_predict:
         age = st.number_input("Age", min_value=1, max_value=120, value=33, step=1)
 
     if st.button("Predict", type="primary"):
-        input_data = np.asarray(
-            [[pregnancies, glucose, blood_pressure, skin_thickness, insulin, bmi, dpf, age]]
+        input_data = pd.DataFrame(
+            [[pregnancies, glucose, blood_pressure, skin_thickness, insulin, bmi, dpf, age]],
+            columns=FEATURES,
         )
+        for col, median in impute_medians.items():
+            if input_data.loc[0, col] == 0:
+                input_data.loc[0, col] = median
+
         std_data = scaler.transform(input_data)
         prediction = model.predict(std_data)[0]
 
@@ -90,8 +96,9 @@ with tab_data:
 
 with tab_model:
     st.subheader("Model performance")
-    col1, col2 = st.columns(2)
-    col1.metric("Training accuracy", f"{metrics['train_accuracy'] * 100:.2f}%")
-    col2.metric("Test accuracy", f"{metrics['test_accuracy'] * 100:.2f}%")
-    st.write("Algorithm: Support Vector Machine (linear kernel)")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Cross-val accuracy", f"{metrics['cv_accuracy'] * 100:.2f}%")
+    col2.metric("Training accuracy", f"{metrics['train_accuracy'] * 100:.2f}%")
+    col3.metric("Test accuracy", f"{metrics['test_accuracy'] * 100:.2f}%")
+    st.write("Algorithm:", metrics["model_name"])
     st.write("Features used:", ", ".join(FEATURES))
