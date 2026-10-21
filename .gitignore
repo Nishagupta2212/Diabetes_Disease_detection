@@ -1,5 +1,4 @@
 .claude/
 .venv/
 __pycache__/
-*.pkl
 *.log

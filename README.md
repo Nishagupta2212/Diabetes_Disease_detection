@@ -29,10 +29,14 @@ A Machine Learning web application that predicts whether a person is likely to h
 ```
 diseases-detection/
 │
-├── app.py
+├── app.py                  # Flask web app (deployed on Vercel)
+├── templates/index.html    # Web page for the Flask app
+├── streamlit_app.py        # Streamlit version for local use
 ├── train_model.py
+├── model.pkl, scaler.pkl, impute_medians.pkl, metrics.pkl
 ├── diabetes.csv
-├── requirements.txt
+├── requirements.txt            # Flask app (used by Vercel)
+├── requirements-streamlit.txt  # Streamlit app + training
 ├── README.md
 └── Diabetes_Prediction_using_Machine_Learning.ipynb
 ```
@@ -61,9 +65,32 @@ pip install -r requirements.txt
 
 ### Run the application
 
+Web app (same as the Vercel deployment), opens at http://127.0.0.1:5000:
+
 ```bash
-streamlit run app.py
+python app.py
 ```
+
+Streamlit version:
+
+```bash
+pip install -r requirements-streamlit.txt
+streamlit run streamlit_app.py
+```
+
+### Retrain the model
+
+```bash
+pip install -r requirements-streamlit.txt
+python train_model.py
+```
+
+Commit the regenerated `.pkl` files so the deployed app uses the new model.
+
+### Deploy on Vercel
+
+Import the GitHub repository in Vercel and deploy with the default settings.
+Vercel detects the Flask `app` in `app.py` and installs `requirements.txt`.
 
 ---
 

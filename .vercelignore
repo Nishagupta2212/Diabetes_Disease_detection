@@ -1,0 +1,9 @@
+.venv/
+.claude/
+.streamlit/
+__pycache__/
+*.log
+*.ipynb
+streamlit_app.py
+train_model.py
+requirements-streamlit.txt

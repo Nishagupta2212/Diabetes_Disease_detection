@@ -1,0 +1,5 @@
+# Local Streamlit version of the app (streamlit run streamlit_app.py).
+# Also needed to retrain the model with train_model.py.
+-r requirements.txt
+pandas==3.0.3
+streamlit==1.59.2
