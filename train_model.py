@@ -1,12 +1,22 @@
 """Trains and selects the best diabetes classifier, saving artifacts to disk."""
 import pickle
 
+import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import (
+    GridSearchCV,
+    RepeatedStratifiedKFold,
+    StratifiedKFold,
+    cross_val_score,
+    train_test_split,
+)
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.svm import SVC
 
 # In this dataset, 0 encodes a missing measurement for these columns (a
@@ -14,29 +24,32 @@ from sklearn.svm import SVC
 # treated as a real value.
 ZERO_AS_MISSING = ["Glucose", "BloodPressure", "SkinThickness", "BMI", "Insulin"]
 
+
+def zeros_to_nan(X):
+    X = X.copy()
+    X[ZERO_AS_MISSING] = X[ZERO_AS_MISSING].replace(0, np.nan)
+    return X
+
+
+def impute(X_fit, *others):
+    """Replace missing zeros with medians computed from X_fit only."""
+    medians = {col: X_fit.loc[X_fit[col] != 0, col].median() for col in ZERO_AS_MISSING}
+    return medians, [X.replace({col: {0: m} for col, m in medians.items()}) for X in (X_fit, *others)]
+
+
 diabetes_dataset = pd.read_csv("diabetes.csv")
 
 X = diabetes_dataset.drop(columns="Outcome")
 Y = diabetes_dataset["Outcome"]
 
+# Step 1: choose the model on a training split and check it on held-out data.
 X_train, X_test, Y_train, Y_test = train_test_split(
     X, Y, test_size=0.2, stratify=Y, random_state=2
 )
-X_train = X_train.copy()
-X_test = X_test.copy()
-
-# Medians are computed from the training split only (non-zero entries) to
-# avoid leaking information from the test set.
-impute_medians = {}
-for col in ZERO_AS_MISSING:
-    median = X_train.loc[X_train[col] != 0, col].median()
-    impute_medians[col] = median
-    X_train[col] = X_train[col].replace(0, median)
-    X_test[col] = X_test[col].replace(0, median)
+_, (X_train, X_test) = impute(X_train, X_test)
 
 scaler = StandardScaler()
-scaler.fit(X_train)
-X_train_scaled = scaler.transform(X_train)
+X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=2)
@@ -62,14 +75,31 @@ for name, (estimator, param_grid) in candidates.items():
     if search.best_score_ > best_cv_score:
         best_name, best_estimator, best_cv_score = name, search.best_estimator_, search.best_score_
 
-classifier = best_estimator
-train_accuracy = accuracy_score(Y_train, classifier.predict(X_train_scaled))
-test_accuracy = accuracy_score(Y_test, classifier.predict(X_test_scaled))
+test_accuracy = accuracy_score(Y_test, best_estimator.predict(X_test_scaled))
+
+# Step 2: estimate accuracy of the whole procedure (imputation, scaling and the
+# chosen model) with repeated cross-validation over all patients. This is far
+# more stable than a single 154-patient test split.
+pipeline = make_pipeline(
+    FunctionTransformer(zeros_to_nan),
+    SimpleImputer(strategy="median"),
+    StandardScaler(),
+    clone(best_estimator),
+)
+repeated_cv = RepeatedStratifiedKFold(n_splits=5, n_repeats=10, random_state=2)
+cv_scores = cross_val_score(pipeline, X, Y, cv=repeated_cv, scoring="accuracy")
+
+# Step 3: retrain the chosen model on all patients for deployment.
+impute_medians, (X_all,) = impute(X)
+scaler = StandardScaler()
+X_all_scaled = scaler.fit_transform(X_all)
+classifier = clone(best_estimator).fit(X_all_scaled, Y)
+train_accuracy = accuracy_score(Y, classifier.predict(X_all_scaled))
 
 print(f"\nSelected model: {best_name}")
-print(f"CV accuracy: {best_cv_score:.4f}")
-print(f"Training accuracy: {train_accuracy:.4f}")
-print(f"Test accuracy: {test_accuracy:.4f}")
+print(f"Held-out test accuracy: {test_accuracy:.4f}")
+print(f"Repeated CV accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
+print(f"Training accuracy (all {len(X)} patients): {train_accuracy:.4f}")
 
 with open("model.pkl", "wb") as f:
     pickle.dump(classifier, f)
@@ -84,9 +114,11 @@ with open("metrics.pkl", "wb") as f:
     pickle.dump(
         {
             "model_name": best_name,
-            "cv_accuracy": best_cv_score,
+            "cv_accuracy": cv_scores.mean(),
+            "cv_std": cv_scores.std(),
             "train_accuracy": train_accuracy,
             "test_accuracy": test_accuracy,
+            "n_patients": len(X),
         },
         f,
     )
