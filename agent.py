@@ -1,8 +1,11 @@
 """AI assistant (Groq-hosted LLM) that answers questions using the diabetes model as tools."""
 import json
+import logging
 import os
 
 import groq
+
+logger = logging.getLogger(__name__)
 
 MODEL = os.environ.get("GROQ_MODEL", "qwen/qwen3.8-27b")
 MAX_TOOL_ROUNDS = 8
@@ -111,11 +114,13 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        if not os.environ.get("GROQ_API_KEY"):
+        # Strip stray spaces or newlines that often come along when a key is pasted.
+        api_key = os.environ.get("GROQ_API_KEY", "").strip().strip('"').strip("'")
+        if not api_key:
             raise AgentUnavailable(
                 "The AI assistant is not configured. Set the GROQ_API_KEY environment variable."
             )
-        _client = groq.Groq()
+        _client = groq.Groq(api_key=api_key)
     return _client
 
 
@@ -159,14 +164,22 @@ def chat(history, execute_tool):
                 reasoning_effort="low",
                 max_completion_tokens=4096,
             )
-        except groq.AuthenticationError as exc:
-            raise AgentUnavailable("The AI assistant's API key is invalid.") from exc
-        except groq.RateLimitError as exc:
-            raise AgentUnavailable("The AI assistant is busy right now. Please try again in a minute.") from exc
-        except groq.BadRequestError as exc:
-            # Includes "tool_use_failed" when the model writes a malformed tool call.
-            raise AgentUnavailable("The AI assistant couldn't handle that request. Try rephrasing it.") from exc
-        except (groq.APIStatusError, groq.APIConnectionError) as exc:
+        except groq.GroqError as exc:
+            # Logged so the real cause shows up in the server (Vercel) logs.
+            logger.error("Groq request failed: %r", exc)
+            if isinstance(exc, groq.AuthenticationError):
+                raise AgentUnavailable("The AI assistant's API key is invalid.") from exc
+            if isinstance(exc, groq.RateLimitError):
+                raise AgentUnavailable("The AI assistant is busy right now. Please try again in a minute.") from exc
+            if isinstance(exc, groq.BadRequestError):
+                # Includes "tool_use_failed" when the model writes a malformed tool call.
+                raise AgentUnavailable("The AI assistant couldn't handle that request. Try rephrasing it.") from exc
+            if isinstance(exc, groq.NotFoundError):
+                raise AgentUnavailable(f"The AI model '{MODEL}' is not available on this Groq account.") from exc
+            if isinstance(exc, groq.APIStatusError):
+                raise AgentUnavailable(
+                    f"The AI service returned an error ({exc.status_code}). Please try again."
+                ) from exc
             raise AgentUnavailable("The AI assistant could not be reached. Please try again.") from exc
 
         choice = response.choices[0]
