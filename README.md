@@ -30,6 +30,9 @@ A Machine Learning web application that predicts whether a person is likely to h
 diseases-detection/
 │
 ├── app.py                  # Flask web app (deployed on Vercel)
+├── agent.py                # AI assistant: Groq LLM + tool-calling loop
+├── rag.py                  # BM25 retrieval over knowledge/
+├── knowledge/              # Health guidance notes used for RAG
 ├── templates/index.html    # Web page for the Flask app
 ├── streamlit_app.py        # Streamlit version for local use
 ├── train_model.py
@@ -68,7 +71,7 @@ pip install -r requirements.txt
 Web app (same as the Vercel deployment), opens at http://127.0.0.1:5000:
 
 ```bash
-python app.py
+flask --app app run
 ```
 
 Streamlit version:
@@ -91,6 +94,29 @@ Commit the regenerated `.pkl` files so the deployed app uses the new model.
 
 Import the GitHub repository in Vercel and deploy with the default settings.
 Vercel detects the Flask `app` in `app.py` and installs `requirements.txt`.
+
+---
+
+## 🤖 AI Assistant (LLM agent + tools + RAG)
+
+The **AI Assistant** tab is a chatbot powered by `qwen/qwen3.8-27b` on [Groq](https://console.groq.com).
+It works as an **agent**: the LLM decides which tools to call, the app runs them, and the LLM
+writes the answer from the results.
+
+| Tool | What it does |
+|---|---|
+| `predict_diabetes_risk` | Runs the trained model (e.g. "what if my BMI was 25?") |
+| `compare_to_dataset` | Percentile of a value among the 768 patients |
+| `get_dataset_statistics` | Mean, quartiles and per-diagnosis averages for a feature |
+| `get_model_info` | Accuracy and feature weights |
+| `search_health_guidelines` | **RAG**: BM25 search over the guidance notes in `knowledge/` (WHO, ADA, CDC, AHA) |
+
+Answers drawn from the knowledge library show their sources under the reply. To add knowledge,
+add a Markdown file to `knowledge/` with a `# Title`, a `Source: name | url` line and `## Section`
+blocks; it is indexed automatically when the app starts.
+
+**Setup:** put your Groq key in a `.env` file (`GROQ_API_KEY=...`, see `.env.example`) for local
+use, and add `GROQ_API_KEY` under Vercel → Settings → Environment Variables for the deployed app.
 
 ---
 

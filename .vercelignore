@@ -7,3 +7,4 @@ __pycache__/
 streamlit_app.py
 train_model.py
 requirements-streamlit.txt
+.env
