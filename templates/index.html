@@ -143,6 +143,7 @@ th:first-child, td:first-child { text-align: left; }
 .msg-sources a { color: var(--primary); }
 .typing { color: var(--muted); font-style: italic; }
 .suggestions { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0 1.25rem 0.75rem; }
+.suggestions[hidden] { display: none; }
 .suggestion { border: 1px solid var(--border); background: transparent; border-radius: 999px; padding: 0.35rem 0.8rem;
               font-size: 0.83rem; cursor: pointer; }
 .suggestion:hover { border-color: var(--primary); color: var(--primary); }
